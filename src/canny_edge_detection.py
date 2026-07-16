@@ -1,56 +1,48 @@
-import cv2, time, os, json
+import argparse
+import time
+from pathlib import Path
 
-# carrega a imagem em tons de cinza
-img = cv2.imread('src/imsample/debris_sample_2.jpg', cv2.IMREAD_GRAYSCALE)
-if img is None:
-    raise ValueError("erro no arquivo de imagem sample")
+import cv2
 
-# comeca o timer para analise de performance
-start_time = time.time()
+from perf_logging import log_processing_time, next_output_path
 
-# gamma = 0.7  
-# img = img / 255.0
-# img = np.power(img, gamma) * 255
-# img = img.astype(np.uint8)
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SAMPLE_IMAGE = REPO_ROOT / "src" / "imsample" / "debris_sample_2.jpg"
+LOG_FILE = REPO_ROOT / "docs" / "performance_log.json"
+OUTPUT_BASE = REPO_ROOT / "src" / "imoutput" / "canny" / "canny_edges_output"
+METHOD_NAME = "canny optimized"
 
-# aplicacao de blur Gaussiano para diminuir o ruido
-blurred_img = cv2.GaussianBlur(img, (5, 5), 0)
 
-canny_edges = cv2.Canny(img, 100, 200)
+def detect_edges(img):
+    return cv2.Canny(img, 100, 200)
 
-processing_time = time.time() - start_time
-print(f"Tempo de processamento para Canny: {processing_time:.4f} segundos")
 
-# \/\/\/\/ processo de gravar o tempo de performance num json \/\/\/\/
-log_file = 'docs/performance_log.json'
-method_name = "Metodo Canny otimizado"
+def main(show: bool = False) -> Path:
+    img = cv2.imread(str(SAMPLE_IMAGE), cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        raise ValueError(f"sample image not found: {SAMPLE_IMAGE}")
 
-if os.path.exists(log_file):
-    with open(log_file, 'r') as f:
-        log_data = json.load(f)
-else:
-    log_data = {}
-# adiciona o tempo de performance na lista correspondente
-if method_name not in log_data:
-    log_data[method_name] = []
+    start_time = time.time()
+    canny_edges = detect_edges(img)
+    processing_time = time.time() - start_time
+    print(f"canny processing time: {processing_time:.4f}s")
 
-log_data[method_name].append(processing_time)
-# grava o log atualizado no arquivo
-with open(log_file, 'w') as f:
-    json.dump(log_data, f, indent=4)
-# \/\/\/\/ fim processo de gravar o tempo... \/\/\/\/
+    log_processing_time(LOG_FILE, METHOD_NAME, processing_time)
 
-# tentativa de automatizar a nomenclatura das imagens
-base_path = 'src/imoutput/canny/canny_edges_output'
-file_extension = '.jpg'
-file_path = base_path + file_extension
-counter = 1
-while os.path.exists(file_path):
-    file_path = f"{base_path}-{counter}{file_extension}"
-    counter += 1
+    file_path = next_output_path(OUTPUT_BASE, ".jpg")
+    cv2.imwrite(str(file_path), canny_edges)
+    print(f"saved output to: {file_path}")
 
-cv2.imwrite(file_path, canny_edges)
-print(f"Arquivo salvo como: {file_path}")
-cv2.imshow('Canny Edges', canny_edges)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    if show:
+        cv2.imshow("Canny Edges", canny_edges)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    return file_path
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--show", action="store_true", help="display the result in a window")
+    args = parser.parse_args()
+    main(show=args.show)

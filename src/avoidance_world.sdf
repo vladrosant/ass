@@ -7,7 +7,7 @@
       <uri>model://sun</uri>
     </include>
 
-    <!-- Example Object -->
+    <!-- example object -->
     <include>
       <uri>model://box</uri>
       <pose>1 0 0.5 0 0 0</pose>

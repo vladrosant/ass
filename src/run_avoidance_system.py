@@ -1,59 +1,68 @@
-import cv2, time, os, json
-import numpy as np
+from pathlib import Path
 
-# carrega a imagem em tons de cinza
-img = cv2.imread('src/imsample/debris_sample_2.jpg', cv2.IMREAD_GRAYSCALE)
-if img is None:
-    raise ValueError("erro no arquivo de imagem sample")
+import cv2
 
-# comeca o timer para analise de performance
-start_time = time.time()
+from sobel_edge_detection import detect_edges
 
-# aplica o operador sobel nas direcoes x e y
-sobel_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
-sobel_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SAMPLE_IMAGE = REPO_ROOT / "src" / "imsample" / "debris_sample_2.jpg"
 
-# combina os dois gradientes
-sobel_edges = cv2.magnitude(sobel_x, sobel_y)
-sobel_edges = np.uint8(np.absolute(sobel_edges))
 
-# parametros de navegacao
-h, w = img.shape
-center_x, center_y = w // 2, h // 2
-move_direction = {"x": 0, "y": 0}
-
-# calcula centro do objeto detectado
 def calculate_object_center(edges):
-    # detecta contorno
+    # find contours
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if contours:
-        # maior contorno = provavelmente objeto principal
-        largest_contour = max(contours, key=cv2.contourArea)
-        M = cv2.moments(largest_contour)
-        if M['m00'] != 0:
-            cx = int(M['m10'] / M['m00'])
-            cy = int(M['m01'] / M['m00'])
-            return cx, cy
-    return None
+    if not contours:
+        return None
 
-# calcula centro do obj
-object_center = calculate_object_center(sobel_edges)
+    # largest contour is probably the main object
+    largest_contour = max(contours, key=cv2.contourArea)
+    M = cv2.moments(largest_contour)
+    if M["m00"] == 0:
+        return None
 
-if object_center:
-    obj_x, obj_y = object_center
+    cx = int(M["m10"] / M["m00"])
+    cy = int(M["m01"] / M["m00"])
+    return cx, cy
 
-    # faz a maneuver baseado na posição relativa do centro do objeto e o centro da img
+
+def compute_move_direction(obj_x, obj_y, center_x, center_y) -> dict:
+    move_direction = {"x": 0, "y": 0}
+
     if obj_x < center_x:
-        move_direction["x"] = 1  # Move right
+        move_direction["x"] = 1  # move right
     elif obj_x > center_x:
-        move_direction["x"] = -1  # Move left
+        move_direction["x"] = -1  # move left
 
     if obj_y < center_y:
-        move_direction["y"] = 1  # Move down
+        move_direction["y"] = 1  # move down
     elif obj_y > center_y:
-        move_direction["y"] = -1  # Move up
+        move_direction["y"] = -1  # move up
 
-    print(f"Objeto detectado em: ({obj_x}, {obj_y})")
-    print(f"Direcao surgerida: {move_direction}")
-else:
-    print("Nenhum objeto detectado. Sem manobras.")
+    return move_direction
+
+
+def main() -> dict | None:
+    img = cv2.imread(str(SAMPLE_IMAGE), cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        raise ValueError(f"sample image not found: {SAMPLE_IMAGE}")
+
+    sobel_edges = detect_edges(img)
+
+    h, w = img.shape
+    center_x, center_y = w // 2, h // 2
+
+    object_center = calculate_object_center(sobel_edges)
+    if object_center is None:
+        print("no object detected, no maneuver needed")
+        return None
+
+    obj_x, obj_y = object_center
+    move_direction = compute_move_direction(obj_x, obj_y, center_x, center_y)
+
+    print(f"object detected at: ({obj_x}, {obj_y})")
+    print(f"suggested direction: {move_direction}")
+    return move_direction
+
+
+if __name__ == "__main__":
+    main()
