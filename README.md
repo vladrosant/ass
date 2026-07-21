@@ -12,11 +12,12 @@ the project is a combination of image processing and ai.
 - a heuristic centroid-based maneuver suggestion (`src/run_avoidance_system.py`): detects the largest edge contour and suggests a move direction relative to image center.
 
 **planned, not yet implemented:**
-- cnn-based object classification (a model architecture exists in `src/obj_classification.py` but is untrained, with no dataset or training pipeline)
-- rnn-based trajectory prediction
-- reinforcement learning avoidance policy
-- fault-tolerant / thruster-failure handling
-- gazebo simulation integration (`src/avoidance_world.sdf` is a minimal stub world, not yet wired to the python code)
+- gazebo simulation integration (`src/avoidance_world.sdf` is a minimal stub world, not yet wired to the python code) — in progress, see `docs/plans/sim-loop.md`
+- orbital mechanics: propagation + conjunction assessment, see `docs/plans/orbital-mechanics.md`
+- autonomy & health monitoring: state estimation + fault detection/mode management, see `docs/plans/autonomy-health.md`
+- reinforcement learning avoidance policy (blocked on the two above), see `docs/plans/rl-avoidance-policy.md`
+
+full architecture, dependency ordering, and what's been parked (cnn classification, rnn trajectory prediction): `docs/plans/planning.md`.
 
 ## development
 ```
