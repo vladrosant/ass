@@ -17,6 +17,18 @@ these are intentionally loosely coupled — orbital mechanics doesn't need gazeb
 
 "vehicle management" (command sequencing, safe-mode transitions) — one of the NASA software categories flagged as interesting — isn't a separate doc. it's the mode-management phase of `autonomy-health.md`. no need for a fifth doc to cover it.
 
+## suggested working order
+
+not a hard sequence — the dependency column above is the only real constraint. but given one person working roughly one thing at a time, this is the order that manages risk best:
+
+1. **start `sim-loop` phase 0 (environment) first**, even if you don't finish it in one sitting. it's the slowest thing to de-risk (unknown ros2-on-debian friction) and it blocks the most downstream work (`autonomy-health` phase 2+, all of `rl-avoidance-policy`). better to hit that friction early than discover it months from now when everything else is finally ready and stuck behind an unresolved vm issue.
+2. **use `orbital-mechanics` and `autonomy-health` phase 1 as fallback tracks** whenever phase 0 stalls or you want a change of pace — both are pure math, zero environment dependency, and can be picked up in either order or interleaved freely.
+3. once the environment is confirmed working, push `sim-loop` through phases 1-2 (camera + node) — this is the one that, once closed, unlocks everything else.
+4. with the loop closed, `autonomy-health` phases 2-3 (fault injection, mode state machine) become available.
+5. `rl-avoidance-policy` last, once fault modes exist to train a policy against.
+
+the rule of thumb: the sim-loop environment work should never be the *only* thing in flight, because it's the one track whose timeline is genuinely unpredictable.
+
 ## initiatives
 
 | initiative | status | doc |
