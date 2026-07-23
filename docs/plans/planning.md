@@ -29,6 +29,17 @@ not a hard sequence — the dependency column above is the only real constraint.
 
 the rule of thumb: the sim-loop environment work should never be the *only* thing in flight, because it's the one track whose timeline is genuinely unpredictable.
 
+## prerequisite skills
+
+each doc lists resources for its own phases; this is the foundational layer that's shared across more than one of them, worth front-loading rather than picking up piecemeal:
+
+- **linear algebra** — vectors, matrix ops, cross/dot products. used directly in `orbital-mechanics` (state vectors) and `autonomy-health` (kalman filter state/covariance matrices). the single highest-leverage thing to be solid on before either track.
+- **odes and numerical integration** — enough to know what `scipy.integrate.solve_ivp` is actually doing (rk-family methods), needed for the two-body propagator in `orbital-mechanics` phase 1.
+- **ros 2 fundamentals** — nodes, topics, pub/sub, launch files. the official ros 2 tutorials (docs.ros.org) are enough; this is the critical-path unlock for `sim-loop` phases 1-2.
+- **testing numerical code** — a different skill from testing the existing pure-function logic (`test_navigation.py`). asserting a conservation law holds within tolerance, or that a known analytic case matches within epsilon, instead of exact equality. recurs in both `orbital-mechanics` (energy/angular-momentum checks) and `autonomy-health` (filter convergence checks) — worth deliberately practicing once rather than re-deriving the pattern each time.
+
+kalman filter theory specifically: start with Roger Labbe's free *Kalman and Bayesian Filters in Python* (notebook-based, builds the filter incrementally with runnable code) before Dan Simon's *Optimal State Estimation* (already in `autonomy-health.md` as the rigorous reference) — Labbe is the gentler on-ramp, Simon is where you go for the rigor Labbe skips.
+
 ## initiatives
 
 | initiative | status | doc |
